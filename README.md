@@ -98,6 +98,7 @@ In the HyperDX UI, filter on the `project` and `env` resource attributes to see 
 - **Server Action errors.** A thrown Server Action error reaches the nearest React error boundary, so the form is wrapped in one. Without it, the whole page is replaced by Next's error screen.
 - **`betaMode: true`** is required for `setTraceAttributes`.
 - **Source maps.** The build emits browser source maps (`productionBrowserSourceMaps`), but uploading them to HyperDX is not set up here.
+- **Schema.** The collector creates the official [ClickStack tables](https://clickhouse.com/docs/clickstack/ingesting-data/schemas) through its own migrations (`otel_*`, `hyperdx_sessions` with `TimestampTime`, and the `*_kv_rollup_15m` tables). Do not set `HYPERDX_OTEL_EXPORTER_CREATE_LEGACY_SCHEMA`: the legacy layout lacks `TimestampTime`, and session replay then fails to load.
 - **Ports.** The compose file does not publish the HyperDX API port (8000). The UI proxies it, and 8000 is often taken.
 
 Tested with Next.js 16.4.3 (also from the Docker image), `@hyperdx/browser` 0.26 and `@hyperdx/node-opentelemetry` 0.11 against the HyperDX 2.x images.
