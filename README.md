@@ -47,6 +47,23 @@ npm run build && npm start        # http://localhost:3000
 
 Open http://localhost:3000, click **Generate every signal**, then look at HyperDX. Logs, traces and sessions appear within seconds. Metrics are exported every 60 seconds.
 
+### Run the app in Docker
+
+The repo has a multi-stage [`Dockerfile`](Dockerfile) (Next.js standalone output, non-root user, health check) and a root [`docker-compose.yml`](docker-compose.yml) that runs the app next to the HyperDX stack in one Compose project.
+
+```bash
+# After steps 1 to 3 above (HyperDX running, account registered, .env.local filled in)
+docker compose --env-file .env.local up -d --build
+```
+
+The app is on http://localhost:3000.
+
+- The server container sends to the collector over the Compose network (`http://otel-collector:4318`). The browser sends to `NEXT_PUBLIC_HYPERDX_URL`, which must be reachable from your machine (`http://localhost:4318`).
+- `NEXT_PUBLIC_*` values are baked into the image at build time. Rebuild with `--build` after changing the key or the collector URL.
+- The root compose file uses the same project name (`hyperdx`) as `infra/hyperdx`, so it reuses the running stack, its volumes and your account.
+- To start only the app and leave HyperDX alone: `docker compose --env-file .env.local up -d --build --no-deps web`.
+- Stop everything with `docker compose --env-file .env.local down`. Add `-v` only if you want to delete the HyperDX data.
+
 ### Environment
 
 | Variable | Purpose |
@@ -83,4 +100,4 @@ In the HyperDX UI, filter on the `project` and `env` resource attributes to see 
 - **Source maps.** The build emits browser source maps (`productionBrowserSourceMaps`), but uploading them to HyperDX is not set up here.
 - **Ports.** The compose file does not publish the HyperDX API port (8000). The UI proxies it, and 8000 is often taken.
 
-Tested with Next.js 16.4.3, `@hyperdx/browser` 0.26 and `@hyperdx/node-opentelemetry` 0.11 against the HyperDX 2.x images.
+Tested with Next.js 16.4.3 (also from the Docker image), `@hyperdx/browser` 0.26 and `@hyperdx/node-opentelemetry` 0.11 against the HyperDX 2.x images.

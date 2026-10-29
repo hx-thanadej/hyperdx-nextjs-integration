@@ -1,0 +1,37 @@
+# Runs the Next.js app next to the local HyperDX stack in one Compose project.
+#   docker compose --env-file .env.local up -d --build
+# The project name matches infra/hyperdx so it reuses the same volumes and account.
+name: hyperdx
+
+include:
+  - infra/hyperdx/docker-compose.yml
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_HYPERDX_API_KEY: ${NEXT_PUBLIC_HYPERDX_API_KEY:?set NEXT_PUBLIC_HYPERDX_API_KEY in .env.local}
+        # The browser reaches the collector through the published host port.
+        NEXT_PUBLIC_HYPERDX_URL: ${NEXT_PUBLIC_HYPERDX_URL:-http://localhost:4318}
+        NEXT_PUBLIC_APP_PROJECT: ${NEXT_PUBLIC_APP_PROJECT:-hyperdx-nextjs-integration}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-local}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      HYPERDX_API_KEY: ${HYPERDX_API_KEY:?set HYPERDX_API_KEY in .env.local}
+      # The server reaches the collector over the Compose network.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-hyperdx-nextjs-server}
+      HDX_STARTUP_LOGS: "false"
+    depends_on:
+      otel-collector:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal
